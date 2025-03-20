@@ -9,6 +9,21 @@ tags:
     description: Everything about your Pets
 paths:
   /pet:
+    get:
+      tags:
+        - pet
+      summary: List all pets
+      description: Returns all pets in the store
+      operationId: listPets
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
     post:
       tags:
         - pet

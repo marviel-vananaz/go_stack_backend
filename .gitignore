@@ -1,3 +1,5 @@
 .direnv
 .envrc
 internal/oas
+test_http
+internal/db

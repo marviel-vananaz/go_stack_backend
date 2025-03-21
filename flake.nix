@@ -21,6 +21,7 @@
         buildInputs = [
             pkgs.ogen
             pkgs.git
+            pkgs.go-jet
         ];
       };
     }

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/marviel-vananaz/go-stack-backend/.gen/api"
+	"github.com/marviel-vananaz/go-stack-backend/.gen/db/model"
 	"github.com/marviel-vananaz/go-stack-backend/infra/sqlite"
-	"github.com/marviel-vananaz/go-stack-backend/internal/db/model"
-	"github.com/marviel-vananaz/go-stack-backend/internal/oas"
 )
 
 type petRepo interface {
@@ -31,9 +31,9 @@ type petService struct {
 	repo petRepo
 }
 
-func (p *petService) AddPet(ctx context.Context, req *oas.Pet) (oas.AddPetRes, error) {
+func (p *petService) AddPet(ctx context.Context, req *api.Pet) (api.AddPetRes, error) {
 	if req.Name == "" {
-		res := oas.AddPetBadRequest{
+		res := api.AddPetBadRequest{
 			Code:    http.StatusBadRequest,
 			Message: "pet name is required",
 		}
@@ -42,66 +42,66 @@ func (p *petService) AddPet(ctx context.Context, req *oas.Pet) (oas.AddPetRes, e
 
 	pet, err := p.repo.Add(req.Name)
 	if err != nil {
-		res := oas.AddPetInternalServerError{
+		res := api.AddPetInternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to create pet",
 		}
 		return &res, nil
 	}
 
-	return &oas.Pet{
-		ID:     oas.NewOptInt64(int64(*pet.ID)),
+	return &api.Pet{
+		ID:     api.NewOptInt64(int64(*pet.ID)),
 		Name:   pet.Name,
-		Status: oas.NewOptPetStatus(oas.PetStatus(*pet.Status)),
+		Status: api.NewOptPetStatus(api.PetStatus(*pet.Status)),
 	}, nil
 }
 
-func (p *petService) DeletePet(ctx context.Context, params oas.DeletePetParams) (oas.DeletePetRes, error) {
+func (p *petService) DeletePet(ctx context.Context, params api.DeletePetParams) (api.DeletePetRes, error) {
 	err := p.repo.Delete(int(params.PetId))
 	if err != nil {
 		if errors.Is(err, sqlite.ErrPetNotFound) {
-			res := oas.DeletePetNotFound{
+			res := api.DeletePetNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
 			}
 			return &res, nil
 		}
-		res := oas.DeletePetInternalServerError{
+		res := api.DeletePetInternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to delete pet",
 		}
 		return &res, nil
 	}
-	return &oas.DeletePetOK{}, nil
+	return &api.DeletePetOK{}, nil
 }
 
-func (p *petService) GetPetById(ctx context.Context, params oas.GetPetByIdParams) (oas.GetPetByIdRes, error) {
+func (p *petService) GetPetById(ctx context.Context, params api.GetPetByIdParams) (api.GetPetByIdRes, error) {
 	pet, err := p.repo.GetByID(int(params.PetId))
 	if err != nil {
 		if errors.Is(err, sqlite.ErrPetNotFound) {
-			res := oas.GetPetByIdNotFound{
+			res := api.GetPetByIdNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
 			}
 			return &res, nil
 		}
-		res := oas.GetPetByIdInternalServerError{
+		res := api.GetPetByIdInternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to get pet",
 		}
 		return &res, nil
 	}
 
-	return &oas.Pet{
-		ID:     oas.NewOptInt64(int64(*pet.ID)),
+	return &api.Pet{
+		ID:     api.NewOptInt64(int64(*pet.ID)),
 		Name:   pet.Name,
-		Status: oas.NewOptPetStatus(oas.PetStatus(*pet.Status)),
+		Status: api.NewOptPetStatus(api.PetStatus(*pet.Status)),
 	}, nil
 }
 
-func (p *petService) UpdatePet(ctx context.Context, params oas.UpdatePetParams) (oas.UpdatePetRes, error) {
+func (p *petService) UpdatePet(ctx context.Context, params api.UpdatePetParams) (api.UpdatePetRes, error) {
 	if !params.Name.Set || params.Name.Value == "" {
-		res := oas.UpdatePetBadRequest{
+		res := api.UpdatePetBadRequest{
 			Code:    http.StatusBadRequest,
 			Message: "pet name is required",
 		}
@@ -116,13 +116,13 @@ func (p *petService) UpdatePet(ctx context.Context, params oas.UpdatePetParams) 
 	})
 	if err != nil {
 		if errors.Is(err, sqlite.ErrPetNotFound) {
-			res := oas.UpdatePetNotFound{
+			res := api.UpdatePetNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
 			}
 			return &res, nil
 		}
-		res := oas.UpdatePetInternalServerError{
+		res := api.UpdatePetInternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to update pet",
 		}
@@ -131,26 +131,26 @@ func (p *petService) UpdatePet(ctx context.Context, params oas.UpdatePetParams) 
 	return nil, nil
 }
 
-func (p *petService) ListPets(ctx context.Context) (oas.ListPetsRes, error) {
+func (p *petService) ListPets(ctx context.Context) (api.ListPetsRes, error) {
 	pets, err := p.repo.List(nil)
 	if err != nil {
-		res := oas.ListPetsInternalServerError{
+		res := api.ListPetsInternalServerError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to list pets",
 		}
 		return &res, nil
 	}
 
-	result := make([]oas.Pet, len(pets))
+	result := make([]api.Pet, len(pets))
 	for i, pet := range pets {
-		result[i] = oas.Pet{
-			ID:     oas.NewOptInt64(int64(*pet.ID)),
+		result[i] = api.Pet{
+			ID:     api.NewOptInt64(int64(*pet.ID)),
 			Name:   pet.Name,
-			Status: oas.NewOptPetStatus(oas.PetStatus(*pet.Status)),
+			Status: api.NewOptPetStatus(api.PetStatus(*pet.Status)),
 		}
 	}
 
-	res := oas.ListPetsOKApplicationJSON(result)
+	res := api.ListPetsOKApplicationJSON(result)
 	return &res, nil
 }
 

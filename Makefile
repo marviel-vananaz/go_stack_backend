@@ -1,5 +1,5 @@
 gen-oas:
-	ogen --clean --package oas --target internal/oas _oas/openapi.yml 
+	ogen --clean --package api --target ./.gen/api openapi/openapi.yml 
 
 gen-db:
-	jet -source=sqlite -dsn="../database/database.db" -path=./internal/db
+	jet -source=sqlite -dsn="../database/database.db" -path=./.gen/db

@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/marviel-vananaz/go-stack-backend/.gen/api"
 	"github.com/marviel-vananaz/go-stack-backend/infra/sqlite"
-	"github.com/marviel-vananaz/go-stack-backend/internal/oas"
 	"github.com/marviel-vananaz/go-stack-backend/usecase/petsvc"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -20,7 +20,7 @@ func main() {
 	}
 	repo := sqlite.NewPetRepo(db)
 	service := petsvc.NewService(&repo)
-	srv, err := oas.NewServer(service)
+	srv, err := api.NewServer(service)
 	if err != nil {
 		log.Fatal(err)
 	}

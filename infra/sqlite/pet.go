@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	. "github.com/go-jet/jet/v2/sqlite"
-	"github.com/marviel-vananaz/go-stack-backend/internal/db/model"
-	. "github.com/marviel-vananaz/go-stack-backend/internal/db/table"
+	"github.com/marviel-vananaz/go-stack-backend/.gen/db/model"
+	. "github.com/marviel-vananaz/go-stack-backend/.gen/db/table"
 )
 
 var (

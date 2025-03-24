@@ -1,7 +1,5 @@
-.PHONY: generate-oas
-
-generate-oas:
+gen-oas:
 	ogen --clean --package oas --target internal/oas _oas/openapi.yml 
 
-generate-db:
+gen-db:
 	jet -source=sqlite -dsn="../database/database.db" -path=./internal/db

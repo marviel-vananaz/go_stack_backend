@@ -13,17 +13,17 @@
   outputs = { self, nixpkgs, flake-utils, ...}:
     flake-utils.lib.eachDefaultSystem (
       system:
-    let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in
-    {
-      devShells.default = pkgs.mkShell {
-        buildInputs = [
-            pkgs.ogen
-            pkgs.git
-            pkgs.go-jet
-        ];
-      };
-    }
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          devShells.default = pkgs.mkShell {
+            buildInputs = [
+                pkgs.ogen
+                pkgs.git
+                pkgs.go-jet
+            ];
+          };
+        }
     );
 }

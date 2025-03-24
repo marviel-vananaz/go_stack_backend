@@ -1,13 +1,13 @@
-package main
+package petsvc
 
 import (
 	"context"
 	"errors"
 	"net/http"
 
+	"github.com/marviel-vananaz/go-stack-backend/infra/sqlite"
 	"github.com/marviel-vananaz/go-stack-backend/internal/db/model"
 	"github.com/marviel-vananaz/go-stack-backend/internal/oas"
-	"github.com/marviel-vananaz/go-stack-backend/internal/repo"
 )
 
 type petRepo interface {
@@ -27,11 +27,11 @@ type petRepo interface {
 	List(status *string) ([]*model.Pets, error)
 }
 
-type petsService struct {
+type petService struct {
 	repo petRepo
 }
 
-func (p *petsService) AddPet(ctx context.Context, req *oas.Pet) (oas.AddPetRes, error) {
+func (p *petService) AddPet(ctx context.Context, req *oas.Pet) (oas.AddPetRes, error) {
 	if req.Name == "" {
 		res := oas.AddPetBadRequest{
 			Code:    http.StatusBadRequest,
@@ -56,10 +56,10 @@ func (p *petsService) AddPet(ctx context.Context, req *oas.Pet) (oas.AddPetRes, 
 	}, nil
 }
 
-func (p *petsService) DeletePet(ctx context.Context, params oas.DeletePetParams) (oas.DeletePetRes, error) {
+func (p *petService) DeletePet(ctx context.Context, params oas.DeletePetParams) (oas.DeletePetRes, error) {
 	err := p.repo.Delete(int(params.PetId))
 	if err != nil {
-		if errors.Is(err, repo.ErrPetNotFound) {
+		if errors.Is(err, sqlite.ErrPetNotFound) {
 			res := oas.DeletePetNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
@@ -75,10 +75,10 @@ func (p *petsService) DeletePet(ctx context.Context, params oas.DeletePetParams)
 	return &oas.DeletePetOK{}, nil
 }
 
-func (p *petsService) GetPetById(ctx context.Context, params oas.GetPetByIdParams) (oas.GetPetByIdRes, error) {
+func (p *petService) GetPetById(ctx context.Context, params oas.GetPetByIdParams) (oas.GetPetByIdRes, error) {
 	pet, err := p.repo.GetByID(int(params.PetId))
 	if err != nil {
-		if errors.Is(err, repo.ErrPetNotFound) {
+		if errors.Is(err, sqlite.ErrPetNotFound) {
 			res := oas.GetPetByIdNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
@@ -99,7 +99,7 @@ func (p *petsService) GetPetById(ctx context.Context, params oas.GetPetByIdParam
 	}, nil
 }
 
-func (p *petsService) UpdatePet(ctx context.Context, params oas.UpdatePetParams) (oas.UpdatePetRes, error) {
+func (p *petService) UpdatePet(ctx context.Context, params oas.UpdatePetParams) (oas.UpdatePetRes, error) {
 	if !params.Name.Set || params.Name.Value == "" {
 		res := oas.UpdatePetBadRequest{
 			Code:    http.StatusBadRequest,
@@ -115,7 +115,7 @@ func (p *petsService) UpdatePet(ctx context.Context, params oas.UpdatePetParams)
 		Status: (*string)(&params.Status.Value),
 	})
 	if err != nil {
-		if errors.Is(err, repo.ErrPetNotFound) {
+		if errors.Is(err, sqlite.ErrPetNotFound) {
 			res := oas.UpdatePetNotFound{
 				Code:    http.StatusNotFound,
 				Message: "pet not found",
@@ -131,7 +131,7 @@ func (p *petsService) UpdatePet(ctx context.Context, params oas.UpdatePetParams)
 	return nil, nil
 }
 
-func (p *petsService) ListPets(ctx context.Context) (oas.ListPetsRes, error) {
+func (p *petService) ListPets(ctx context.Context) (oas.ListPetsRes, error) {
 	pets, err := p.repo.List(nil)
 	if err != nil {
 		res := oas.ListPetsInternalServerError{
@@ -152,4 +152,10 @@ func (p *petsService) ListPets(ctx context.Context) (oas.ListPetsRes, error) {
 
 	res := oas.ListPetsOKApplicationJSON(result)
 	return &res, nil
+}
+
+func NewService(repo petRepo) *petService {
+	return &petService{
+		repo: repo,
+	}
 }

@@ -24,6 +24,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Pet"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       tags:
         - pet
@@ -37,6 +49,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Pet"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
       requestBody:
         description: Create a new pet in the store
         required: true
@@ -68,6 +92,16 @@ paths:
                 $ref: "#/components/schemas/Pet"
         "404":
           description: Pet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     post:
       tags:
         - pet
@@ -95,6 +129,24 @@ paths:
       responses:
         "200":
           description: successful operation
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Pet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
     delete:
       tags:
         - pet
@@ -112,6 +164,18 @@ paths:
       responses:
         "200":
           description: successful operation
+        "404":
+          description: Pet not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     PetStatus:
@@ -139,6 +203,17 @@ components:
         status:
           $ref: "#/components/schemas/PetStatus"
       type: object
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
   requestBodies:
     Pet:
       content:

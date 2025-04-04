@@ -24,9 +24,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		srv.ServeHTTP(w, r)
+	})
+
 	port := 8080
 	fmt.Printf("Listening to port: %d \n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), srv); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), corsHandler); err != nil {
 		log.Fatal(err)
 	}
 }

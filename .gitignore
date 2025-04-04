@@ -4,3 +4,4 @@ internal/oas
 test_http
 internal/db
 .gen
+firebase_config.json

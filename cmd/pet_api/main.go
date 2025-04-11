@@ -15,6 +15,8 @@ import (
 	"github.com/marviel-vananaz/go-stack-backend/usecase/petsvc"
 	_ "github.com/mattn/go-sqlite3"
 	"google.golang.org/api/option"
+
+	"github.com/centrifugal/centrifuge"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -64,6 +66,20 @@ func withFirebaseAuth(authClient *auth.Client) Middleware {
 	}
 }
 
+func auth_centrifuge() Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			cred := &centrifuge.Credentials{
+				UserID: "",
+			}
+			newCtx := centrifuge.SetCredentials(ctx, cred)
+			r = r.WithContext(newCtx)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func main() {
 	// Initialize Firebase Admin SDK
 	opt := option.WithCredentialsFile("./firebase_config.json") // Update this path
@@ -76,6 +92,38 @@ func main() {
 	if err != nil {
 		log.Fatalf("error getting Auth client: %v\n", err)
 	}
+
+	// Centrifuge Instance
+	node, err := centrifuge.New(centrifuge.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	node.OnConnect(func(client *centrifuge.Client) {
+		transportName := client.Transport().Name()
+		transportProto := client.Transport().Protocol()
+		log.Printf("client connected via %s (%s)", transportName, transportProto)
+
+		client.OnSubscribe(func(e centrifuge.SubscribeEvent, cb centrifuge.SubscribeCallback) {
+			log.Printf("client subscribes on channel %s", e.Channel)
+			cb(centrifuge.SubscribeReply{}, nil)
+		})
+
+		client.OnPublish(func(e centrifuge.PublishEvent, cb centrifuge.PublishCallback) {
+			log.Printf("client publishes into channel %s: %s", e.Channel, string(e.Data))
+			cb(centrifuge.PublishReply{}, nil)
+		})
+
+		client.OnDisconnect(func(e centrifuge.DisconnectEvent) {
+			log.Printf("client disconnected")
+		})
+	})
+
+	if err := node.Run(); err != nil {
+		log.Fatal(err)
+	}
+
+	wsHandler := centrifuge.NewWebsocketHandler(node, centrifuge.WebsocketConfig{})
 
 	// Create service instance.
 	db, err := sql.Open("sqlite3", "../database/database.db")
@@ -95,9 +143,27 @@ func main() {
 		withFirebaseAuth(authClient),
 	)
 
+	// Create a new mux for all routes
+	mux := http.NewServeMux()
+
+	// Register WebSocket handler with CORS
+	wsConfig := centrifuge.WebsocketConfig{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true // You might want to make this more restrictive in production
+		},
+	}
+	wsHandler = centrifuge.NewWebsocketHandler(node, wsConfig)
+	mux.Handle("/connection/websocket", Chain(wsHandler, auth_centrifuge()))
+
+	// Register API routes
+	mux.Handle("/", handler)
+
 	port := 8080
-	fmt.Printf("Listening to port: %d \n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), handler); err != nil {
+	fmt.Printf("Starting server on port: %d \n", port)
+
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), mux); err != nil {
 		log.Fatal(err)
 	}
 }

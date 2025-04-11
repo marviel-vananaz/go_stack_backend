@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
@@ -94,7 +96,13 @@ func main() {
 	}
 
 	// Centrifuge Instance
-	node, err := centrifuge.New(centrifuge.Config{})
+	node, err := centrifuge.New(centrifuge.Config{
+		Name:     "go-chat",
+		LogLevel: centrifuge.LogLevelDebug,
+		LogHandler: func(entry centrifuge.LogEntry) {
+			log.Printf("%s: %v", entry.Message, entry.Fields)
+		},
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,22 +114,50 @@ func main() {
 
 		client.OnSubscribe(func(e centrifuge.SubscribeEvent, cb centrifuge.SubscribeCallback) {
 			log.Printf("client subscribes on channel %s", e.Channel)
+			// Allow subscription to any channel
 			cb(centrifuge.SubscribeReply{}, nil)
 		})
 
-		client.OnPublish(func(e centrifuge.PublishEvent, cb centrifuge.PublishCallback) {
-			log.Printf("client publishes into channel %s: %s", e.Channel, string(e.Data))
-			cb(centrifuge.PublishReply{}, nil)
-		})
+		// Disallow publication for now
+		// client.OnPublish(func(e centrifuge.PublishEvent, cb centrifuge.PublishCallback) {
+		// 	log.Printf("client publishes into channel %s: %s", e.Channel, string(e.Data))
+		// 	node.Publish(e.Channel, e.Data)
+		// 	cb(centrifuge.PublishReply{}, nil)
+		// })
 
 		client.OnDisconnect(func(e centrifuge.DisconnectEvent) {
-			log.Printf("client disconnected")
+			log.Printf("client disconnected: %s", e.Reason)
 		})
 	})
 
 	if err := node.Run(); err != nil {
 		log.Fatal(err)
 	}
+
+	//Publishing server-side messages
+	go func() {
+		channel := "chat" // Simple channel name
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		for t := range ticker.C {
+			// Create a JSON message
+			message := map[string]string{
+				"time": t.Format(time.RFC3339),
+				"type": "server_time",
+			}
+			// Marshal to JSON
+			jsonData, err := json.Marshal(message)
+			if err != nil {
+				log.Printf("Error marshaling message: %v", err)
+				continue
+			}
+			_, err = node.Publish(channel, jsonData)
+			if err != nil {
+				log.Printf("Error publishing message: %v", err)
+			}
+		}
+	}()
 
 	wsHandler := centrifuge.NewWebsocketHandler(node, centrifuge.WebsocketConfig{})
 
